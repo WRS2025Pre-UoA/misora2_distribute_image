@@ -49,10 +49,12 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
     // タイマーで定期的に画像を送信
     timer_ = this->create_wall_timer(100ms, std::bind(&DistributeImage::publish_images, this));
 }
+
 void DistributeImage::image_callback(const sensor_msgs::msg::Image::SharedPtr msg){
     latest_received_image = cv_bridge::toCvCopy(msg, "bgr8")->image;;
     // RCLCPP_INFO_STREAM(this->get_logger(),"Update image");
 }
+
 void DistributeImage::publish_images()
 {
     for (auto &[key, flag] : bool_flags_)
