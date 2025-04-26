@@ -26,6 +26,7 @@ public:
     std::map<std::string, bool> bool_flags_;// 連億処理信号とそれに対応する送り先のmap
     std::map<std::string, rclcpp::Time> start_times_;// 信号を受け取ってから1secとカウントするため
     cv::Mat latest_received_image;// 最新の画像を保存
+    double check_duration_sec;
 
     explicit DistributeImage(const rclcpp::NodeOptions &options);
     DistributeImage() : DistributeImage(rclcpp::NodeOptions{}) {}
