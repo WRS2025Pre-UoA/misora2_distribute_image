@@ -41,7 +41,7 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
             
             // 信号を受けるsubscriber
             bool_subscribers_[list] = this->create_subscription<std_msgs::msg::Bool>(
-                list+"_trigger", 10,
+                list+"_trigger", 1,
                 [this, list](const std_msgs::msg::Bool::SharedPtr msg){
                     RCLCPP_INFO_STREAM(this->get_logger(),"Recieved message '"<< msg->data <<"' from: " << list);
                     if(msg->data){
