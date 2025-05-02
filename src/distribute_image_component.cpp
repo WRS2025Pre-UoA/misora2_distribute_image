@@ -78,6 +78,11 @@ void DistributeImage::publish_images()
             } else {
                 flag = false;
                 start_times_[key] = rclcpp::Time(0); // 任意
+                if(key == "metal_loss"){// 送信終了後黒画像を送信する　減肉metal_loss
+                    cv::Mat brack_image = cv::Mat::zeros(640,480,CV_8UC3);
+                    std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(brack_image);
+                    image_publishers_[key]->publish(std::move(msg_image));
+                }
             }
         }
     }
