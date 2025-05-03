@@ -21,6 +21,8 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
 
     // 常に画像を受け取り更新する
     received_image_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image",10,std::bind(&DistributeImage::image_callback, this, _1));
+    // 減肉用画像を常に受け取り更新する
+    received_image_metal_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image_metal",10,std::bind(&DistributeImage::image_metal_callback, this, _1));
 
     // モードによって用意するsubscriber,publisherのリスト
     std::map<std::string, std::vector<std::string>> topic_list = {
@@ -64,6 +66,11 @@ void DistributeImage::image_callback(const sensor_msgs::msg::Image::SharedPtr ms
     // RCLCPP_INFO_STREAM(this->get_logger(),"Update image");
 }
 
+void DistributeImage::image_metal_callback(const sensor_msgs::msg::Image::SharedPtr msg){
+    latest_received_image_metal = cv_bridge::toCvCopy(msg, "bgr8")->image;;
+    // RCLCPP_INFO_STREAM(this->get_logger(),"Update image");
+}
+
 void DistributeImage::publish_images()
 {
     for (auto &[key, flag] : bool_flags_)
@@ -72,9 +79,16 @@ void DistributeImage::publish_images()
         {
             if((this->now() - start_times_[key]).seconds() < check_duration_sec)
             {
-                std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
-                // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
-                image_publishers_[key]->publish(std::move(msg_image));
+                if(key == "metal_loss"){
+                    std::unique_ptr<cv::Mat> msg_image_metal = std::make_unique<cv::Mat>(latest_received_image_metal);
+                    // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
+                    image_publishers_[key]->publish(std::move(msg_image_metal));
+                }
+                else {
+                    std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
+                    // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
+                    image_publishers_[key]->publish(std::move(msg_image));
+                }
             } else {
                 flag = false;
                 start_times_[key] = rclcpp::Time(0); // 任意
