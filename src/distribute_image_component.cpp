@@ -28,7 +28,7 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
     std::map<std::string, std::vector<std::string>> topic_list = {
         {"P1",{"pressure","qr"}},
         {"P2",{"pressure","qr"}},
-        {"P3",{"cracks","metal_loss"}},
+        {"P3",{"qr","cracks","metal_loss"}},
         {"P4",{"qr"}},
         {"P6",{"pressure","qr"}}
     };
