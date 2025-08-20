@@ -30,6 +30,7 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
         {"P2",{"pressure","qr"}},
         {"P3",{"qr","cracks","metal_loss"}},
         {"P4",{"qr"}},
+        {"P5",{"qr"}},
         {"P6",{"pressure","qr"}}
     };
     // publisher,subscriber作成
@@ -89,7 +90,7 @@ void DistributeImage::publish_images()
                 }
                 else {
                     std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
-                    RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
+                    // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
                     image_publishers_[key]->publish(std::move(msg_image));
                 }
             } else {
