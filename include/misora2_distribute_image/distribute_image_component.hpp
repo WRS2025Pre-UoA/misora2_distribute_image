@@ -9,6 +9,7 @@
 #include <functional>// callback使用
 
 #include "rclcpp/rclcpp.hpp"
+#include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
@@ -25,7 +26,7 @@ public:
     using MyAdaptedType = rclcpp::TypeAdapter<cv::Mat, sensor_msgs::msg::Image>;
     std::map<std::string, bool> bool_flags_;// 連億処理信号とそれに対応する送り先のmap
     std::map<std::string, rclcpp::Time> start_times_;// 信号を受け取ってから1secとカウントするため
-    cv::Mat latest_received_image; //, latest_received_image_metal;// 最新の画像を保存
+    cv::Mat latest_received_image, latest_received_image_metal;// 最新の画像を保存
     double check_duration_sec;
 
     explicit DistributeImage(const rclcpp::NodeOptions &options);
@@ -34,11 +35,11 @@ public:
 private:
     void publish_images();// 信号に対応するところへ画像を流す
     void image_callback(const sensor_msgs::msg::Image::SharedPtr msg);// 定期的にmisoraから送られてくる画像の保存を行う処理関数
-    // void image_metal_callback(const sensor_msgs::msg::Image::SharedPtr msg);// 定期的にmisoraから送られてくる減肉画像の保存を行う処理関数
+    void image_metal_callback(const sensor_msgs::msg::Image::SharedPtr msg);// 定期的にmisoraから送られてくる減肉画像の保存を行う処理関数
 
     rclcpp::TimerBase::SharedPtr timer_;// 信号が来たら1sec間画像を流す
     std::map<std::string, std::shared_ptr<rclcpp::Publisher<MyAdaptedType>>> image_publishers_;// 画像を流す
-    std::map<std::string, std::shared_ptr<rclcpp::Subscription<std_msgs::msg::Bool>>> bool_subscribers_;// 連続処理信号を受け取る
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr trigger_subscribers_;// 連続処理信号を受け取る
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr received_image_;// misoraからの画像を受け取る
     // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr received_image_metal_;// misoraからの減肉画像を受け取る
     

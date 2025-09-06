@@ -21,7 +21,7 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
 
     // 常に画像を受け取り更新する
     received_image_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image",10,std::bind(&DistributeImage::image_callback, this, _1));
-    // // 減肉用画像を常に受け取り更新する
+    // 減肉用画像を常に受け取り更新する
     // received_image_metal_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image_metal",10,std::bind(&DistributeImage::image_metal_callback, this, _1));
 
     // モードによって用意するsubscriber,publisherのリスト
@@ -30,7 +30,6 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
         {"P2",{"pressure","qr"}},
         {"P3",{"qr","cracks"}},
         {"P4",{"qr"}},
-        {"P5",{"qr"}},
         {"P6",{"pressure","qr"}}
     };
     // publisher,subscriber作成
@@ -41,32 +40,30 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
 
             bool_flags_[list] = false; // 初期状態は false
             start_times_[list] = rclcpp::Time(0);
-            
-            // 信号を受けるsubscriber
-            bool_subscribers_[list] = this->create_subscription<std_msgs::msg::Bool>(
-                list+"_trigger", 1,
-                [this, list](const std_msgs::msg::Bool::SharedPtr msg){
-                    RCLCPP_INFO_STREAM(this->get_logger(),"Recieved message '"<< msg->data <<"' from: " << list);
-                    if(msg->data){
-                        bool_flags_[list] = true;
-                        start_times_[list] = this->now();
-                        // std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
-                        // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
-                        // image_publishers_[list]->publish(std::move(msg_image));
-                    }
-                    // image_publishers_[list]->publish(latest_received_image);
-                }
-            );
         }
     }
-    else RCLCPP_INFO_STREAM(this->get_logger(),"Not Prepare Publishers and Subscribers: " << param);
+    else RCLCPP_INFO_STREAM(this->get_logger(),"Not Prepare Publishers: " << param);
+
+    // 信号を受けるsubscriber
+    trigger_subscribers_ = this->create_subscription<std_msgs::msg::String>(
+        "triggers", 1,
+        [this](const std_msgs::msg::String::SharedPtr msg){
+            RCLCPP_INFO_STREAM(this->get_logger(),"Recieved message '"<< msg->data <<"' from: Operator" );
+            std::string key = msg->data;
+            if(!key.empty() && bool_flags_.find(key) != bool_flags_.end()){
+                bool_flags_[key] = true;
+                start_times_[key] = this->now();
+            }
+        });
+    
 
     // タイマーで定期的に画像を送信
     timer_ = this->create_wall_timer(std::chrono::milliseconds(timer_interval_ms), std::bind(&DistributeImage::publish_images, this));
 }
 
 void DistributeImage::image_callback(const sensor_msgs::msg::Image::SharedPtr msg){
-    latest_received_image = cv_bridge::toCvCopy(msg, "bgr8")->image;;
+    latest_received_image = cv_bridge::toCvCopy(msg, "rgb8")->image;
+    cv::cvtColor(latest_received_image, latest_received_image, cv::COLOR_RGB2BGR);
     // RCLCPP_INFO_STREAM(this->get_logger(),"Update image");
 }
 
@@ -78,24 +75,17 @@ void DistributeImage::publish_images()
         {
             if((this->now() - start_times_[key]).seconds() < check_duration_sec)
             {
-                // if(key == "metal_loss"){
-                //     std::unique_ptr<cv::Mat> msg_image_metal = std::make_unique<cv::Mat>(latest_received_image_metal);
-                //     // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
-                //     image_publishers_[key]->publish(std::move(msg_image_metal));
-                // }
-                
                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
-                // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
+                RCLCPP_INFO_STREAM(this->get_logger(),"Publish image to: "<< key);
                 image_publishers_[key]->publish(std::move(msg_image));
-            
+                
             } else {
                 flag = false;
                 start_times_[key] = rclcpp::Time(0); // 任意
-                // if(key == "metal_loss"){// 送信終了後黒画像を送信する　減肉metal_loss
                 cv::Mat black_image = cv::Mat::zeros(480,640,CV_8UC1);
                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(black_image);
                 image_publishers_[key]->publish(std::move(msg_image));
-                // }
+                
             }
         }
     }
