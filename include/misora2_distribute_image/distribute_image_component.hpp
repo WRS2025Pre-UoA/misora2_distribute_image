@@ -34,13 +34,13 @@ public:
 
 private:
     void publish_images();// 信号に対応するところへ画像を流す
-    void image_callback(const sensor_msgs::msg::Image::SharedPtr msg);// 定期的にmisoraから送られてくる画像の保存を行う処理関数
+    void image_callback(const cv::Mat & img);// 定期的にmisoraから送られてくる画像の保存を行う処理関数
     void image_metal_callback(const sensor_msgs::msg::Image::SharedPtr msg);// 定期的にmisoraから送られてくる減肉画像の保存を行う処理関数
 
     rclcpp::TimerBase::SharedPtr timer_;// 信号が来たら1sec間画像を流す
     std::map<std::string, std::shared_ptr<rclcpp::Publisher<MyAdaptedType>>> image_publishers_;// 画像を流す
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr trigger_subscribers_;// 連続処理信号を受け取る
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr received_image_;// misoraからの画像を受け取る
+    rclcpp::Subscription<MyAdaptedType>::SharedPtr received_image_;// misoraからの画像を受け取る
     // rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr received_image_metal_;// misoraからの減肉画像を受け取る
     
 };

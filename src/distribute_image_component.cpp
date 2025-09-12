@@ -20,7 +20,7 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
     RCLCPP_INFO_STREAM(this->get_logger(),"Interval: " << timer_interval_ms << " ms, duration_time: " << check_duration_sec);
 
     // 常に画像を受け取り更新する
-    received_image_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image",10,std::bind(&DistributeImage::image_callback, this, _1));
+    received_image_ = this->create_subscription<MyAdaptedType>("raw_image",10,std::bind(&DistributeImage::image_callback, this, _1));
     // 減肉用画像を常に受け取り更新する
     // received_image_metal_ = this->create_subscription<sensor_msgs::msg::Image>("raw_image_metal",10,std::bind(&DistributeImage::image_metal_callback, this, _1));
 
@@ -61,11 +61,33 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
     timer_ = this->create_wall_timer(std::chrono::milliseconds(timer_interval_ms), std::bind(&DistributeImage::publish_images, this));
 }
 
-void DistributeImage::image_callback(const sensor_msgs::msg::Image::SharedPtr msg){
-    latest_received_image = cv_bridge::toCvCopy(msg, "rgb8")->image;
-    cv::cvtColor(latest_received_image, latest_received_image, cv::COLOR_RGB2BGR);
-    // RCLCPP_INFO_STREAM(this->get_logger(),"Update image");
+// void DistributeImage::image_callback(const sensor_msgs::msg::Image::SharedPtr msg){
+//     // msg の encoding を確認
+//     if (msg->encoding == "rgb8") {
+//         latest_received_image = cv_bridge::toCvCopy(msg, "rgb8")->image;
+//         cv::cvtColor(latest_received_image, latest_received_image, cv::COLOR_RGB2BGR);
+//         RCLCPP_DEBUG(this->get_logger(), "Converted RGB8 -> BGR");
+//     } 
+//     else if (msg->encoding == "bgr8") {
+//         latest_received_image = cv_bridge::toCvCopy(msg, "bgr8")->image;
+//         RCLCPP_DEBUG(this->get_logger(), "Received BGR8 -> No conversion");
+//     } 
+//     else {
+//         // 想定外のエンコードの場合はとりあえず BGR に変換
+//         latest_received_image = cv_bridge::toCvCopy(msg, msg->encoding)->image;
+//         cv::cvtColor(latest_received_image, latest_received_image, cv::COLOR_RGB2BGR);
+//         RCLCPP_WARN(this->get_logger(), "Unexpected encoding %s -> Forced to BGR", msg->encoding.c_str());
+//     }
+// }
+
+void DistributeImage::image_callback(const cv::Mat & img) {
+    // ここに来る時点で TypeAdapter により bgr8 に変換済み
+    latest_received_image = img.clone();  
+
+    RCLCPP_DEBUG(this->get_logger(), "Received image (BGR, %d x %d)", 
+                 img.cols, img.rows);
 }
+
 
 void DistributeImage::publish_images()
 {
