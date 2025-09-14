@@ -77,7 +77,7 @@ void DistributeImage::publish_images()
             if((this->now() - start_times_[key]).seconds() < check_duration_sec)
             {
                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
-                RCLCPP_INFO_STREAM(this->get_logger(),"Publish image to: "<< key);
+                // RCLCPP_INFO_STREAM(this->get_logger(),"Publish image to: "<< key);
                 image_publishers_[key]->publish(std::move(msg_image));
                 
             } else {
