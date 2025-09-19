@@ -47,6 +47,10 @@ DistributeImage::DistributeImage(const rclcpp::NodeOptions &options)
     trigger_subscribers_ = this->create_subscription<std_msgs::msg::String>(
         "triggers", 1,
         [this](const std_msgs::msg::String::SharedPtr msg){
+            if (send_flag_){
+                RCLCPP_WARN(this->get_logger(), "Send in progress, ignoring trigger.");
+                return;  // 送信中は無視
+            }
             RCLCPP_INFO_STREAM(this->get_logger(),"Recieved message '"<< msg->data <<"' from: Operator" );
             std::string key = msg->data;
             if(!key.empty() && bool_flags_.find(key) != bool_flags_.end()){
@@ -74,6 +78,7 @@ void DistributeImage::publish_images()
     {
         if (flag)
         {
+            send_flag_ = true;
             if((this->now() - start_times_[key]).seconds() < check_duration_sec)
             {
                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(latest_received_image);
@@ -86,7 +91,7 @@ void DistributeImage::publish_images()
                 cv::Mat black_image = cv::Mat::zeros(480,640,CV_8UC1);
                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(black_image);
                 image_publishers_[key]->publish(std::move(msg_image));
-                
+                send_flag_ = false;
             }
         }
     }
